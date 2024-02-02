@@ -1,0 +1,39 @@
+the below "Dockerfile" & "entrypoint.sh" are  for launching a fastapi app with uvicorn:
+The build is succesful and image jwt-dc.
+However on run command "docker run -p 8000:8000 jwt-dc" an error "exec /code/entrypoint.sh: exec format error" is occuring. Please correct the error if any :
+
+ Dockerfile:
+
+FROM python:3.11-slim-buster
+WORKDIR /code
+COPY ./requirements.txt .
+RUN pip install --no-cache-dir --upgrade -r requirements.txt
+COPY . .
+RUN chmod +x /code/entrypoint.sh
+EXPOSE 8000
+ENTRYPOINT ["/code/entrypoint.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000","--reload"]
+
+Current entrypoint.s:
+
+#!/bin/bash
+
+# Set environment variables
+export APP_ENV=production
+export APP_PORT=8000
+
+# Start the main application
+exec uvicorn app.main:app --host 0.0.0.0 --port $APP_PORT --reload
+
+
+
+on testing nginx.conf for a FastAPI /Uvicorn app using nginx -t on ec2/al2 the following errors are seen : 
+
+Errors:
+"nginx: [alert] could not open error log file: open() "/var/log/nginx/error.log" failed (13: Permission denied)
+2024/01/30 13:20:40 [warn] 26370#26370: the "user" directive makes sense only if the master process runs with super-user privileges, ignored in /etc/nginx/nginx.conf:5
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+2024/01/30 13:20:40 [emerg] 26370#26370: open() "/run/nginx.pid" failed (13: Permission denied)
+nginx: configuration file /etc/nginx/nginx.conf test failed"
+
+can you advise on what modification to be made for launching the FastAPI app using nginx/ Uvicorn ?

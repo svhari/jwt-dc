@@ -1,5 +1,10 @@
 FROM python:3.11-slim-buster
 
+#ARG PORT=6000
+
+# Set the environment variable for the application
+#ENV PORT=$PORT
+
 #
 WORKDIR /code
 
@@ -14,8 +19,9 @@ COPY . .
 
 RUN chmod +x /code/entrypoint.sh
 
-EXPOSE 8000
+#EXPOSE $PORT
+EXPOSE 5000
 
 ENTRYPOINT ["/code/entrypoint.sh"]
 #
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", $PORT]

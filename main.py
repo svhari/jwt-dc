@@ -1,12 +1,29 @@
 # main.py
-# 15 Jan 2024
-# https://samedwardes.com/2022/04/14/fastapi-webapp-with-auth/
-# venv : venv311jwt - jwt - WebApp
-#
-# To test : uvicorn main:app --reload
-#
-# To test : http//localhost/8000
+# 2 Feb 2024
+# Added file logging using loguru
 
+# https://samedwardes.com/2022/04/14/fastapi-webapp-with-auth/
+# venv : venv311jww - jwt - WebApp Running on Docker writing a file.
+#
+# status : Working with & without docker
+
+# Run Command to run without Docker : uvicorn --port 9000 main:app --reload
+# Run Command for docker : docker run -p 6000:6000  
+# Run docker in background mode : docker run -d -p 6000:6000 jwt-dcn
+
+# Run command from windows CMD : uvicorn main:app --port 9000 --reload
+
+
+# Run command with mount volume instruction :
+
+# docker run -v C:\\Users\\haris\\python\\docker-write:/code -p 5000:5000  jwt-dcwf5k
+
+# This command mounts the C:\Users\haris\python\ddocker-write directory on the host system to the /path/in/container directory in the container.
+#
+
+
+import logging
+import os
 import datetime as dt
 from typing import Dict, List, Optional
 
@@ -21,9 +38,51 @@ from passlib.handlers.sha2_crypt import sha512_crypt as crypto
 from pydantic import BaseModel
 from rich import inspect, print
 from rich.console import Console
+from loguru import logger
+
+# A sample disk file written on the host
+access_log = "jwt_access.log"
+error_log  = "jwt_error.log"
+
+
+# Get the UID/username and GID of the current user
+if os.name == 'nt':
+    username = os.getlogin()
+    uid = None
+    gid = None
+else:
+    import pwd
+    username = pwd.getpwuid(os.getuid()).pw_name
+    uid = os.getuid()
+    gid = os.getgid()
+
 
 console = Console()
+# Create a logger object
+logger.add(access_log, rotation="10 MB", level="INFO")
+logger.add(error_log, rotation="10 MB", level="ERROR")
 
+
+# Create a file handler
+#handler = logging.FileHandler(log_file)
+
+#handler.setLevel(logging.ERROR)
+# Get the file permissions
+access_log_permissions = oct(os.stat(access_log).st_mode)[-3:]
+error_log_permissions = oct(os.stat(error_log).st_mode)[-3:]
+
+# print(f"File permissions: {permissions}")
+# Change the file permissions
+# 0o644 permission allows read access to all users and write access only to the owner of the file.
+os.chmod(access_log, 0o644)
+os.chmod(error_log, 0o644)
+
+# Create a formatter
+#formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#handler.setFormatter(formatter)
+
+# Add the handler to the logger
+#logger.addHandler(handler)
 
 # --------------------------------------------------------------------------
 # Models and Data
@@ -58,7 +117,7 @@ def get_user(username: str) -> User:
 class Settings:
     SECRET_KEY: str = "secret-key"
     ALGORITHM = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES = 30  # in mins
+    ACCESS_TOKEN_EXPIRE_MINUTES = 5  # in mins
     COOKIE_NAME = "access_token"
 
 
@@ -203,8 +262,22 @@ def login_for_access_token(
 # --------------------------------------------------------------------------
 # Home Page
 # --------------------------------------------------------------------------
+
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
+    console.log("[green]About to write on log file")
+    console.print(f'{access_log} permissions: {access_log_permissions}')
+    console.print(f'{error_log} permissions: {error_log_permissions}')
+    # Display the file ownership info based on the OS
+    if os.name == 'nt':
+        console.print(f'OS: {os.name} File ownership: {username}')
+    else:
+        # Change the ownership of the file
+        os.chown(access_log, uid, gid)
+        os.chown(error_log, uid, gid)
+        console.print(f'OS: {os.name} File ownership:uid {uid} gid: {gid}')
+    
+    
     try:
         user = get_current_user_from_cookie(request)
     except:
@@ -213,6 +286,8 @@ def index(request: Request):
         "user": user,
         "request": request,
     }
+
+    logger.info(f'User {user} accessed Home Page.')
     return templates.TemplateResponse("index.html", context)
 
 
@@ -220,12 +295,51 @@ def index(request: Request):
 # Private Page
 # --------------------------------------------------------------------------
 # A private page that only logged in users can access.
+# The method writes in text file, reads the same and displays a message
+
 @app.get("/private", response_class=HTMLResponse)
+
+
 def index(request: Request, user: User = Depends(get_current_user_from_token)):
+
+    """
+    try:
+        with open(disk_file, "w") as f:
+            f.write("This is an example text file created within a FastAPI app deployed with Docker.")
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+    except PermissionError as e:
+        logger.error(f"Permission error: {e}")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+
+    
+    #------------------------------------------------------------
+    try:
+        with open(disk_file, "r") as f:
+            message = f.read()
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        message = ""
+    except PermissionError as e:
+        logger.error(f"Permission error: {e}")
+        message = ""
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        message = ""
+    """
+
+
+    message = f'User {user} logged into Private Page.'
     context = {
         "user": user,
-        "request": request
+        "request": request,
+        "message": message,
+        
     }
+    
+    # Log an info message
+    logger.info(message)
     return templates.TemplateResponse("private.html", context)
 
 # --------------------------------------------------------------------------
