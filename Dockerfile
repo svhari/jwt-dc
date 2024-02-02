@@ -17,11 +17,12 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 #
 COPY . .
 
-RUN chmod +x /code/entrypoint.sh
+# entrypoint.sh for the write file version
+RUN chmod +x /code/wf_entrypoint.sh
 
 #EXPOSE $PORT
 EXPOSE 5000
 
-ENTRYPOINT ["/code/entrypoint.sh"]
+ENTRYPOINT ["/code/wf_entrypoint.sh"]
 #
 # CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", $PORT]

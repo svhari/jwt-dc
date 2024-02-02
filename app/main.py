@@ -1,6 +1,7 @@
 # main.py
 # 2 Feb 2024
 # Added file logging using loguru
+# entrypoint.sh renamed as wf_entrypoint.sh for write file version
 
 # https://samedwardes.com/2022/04/14/fastapi-webapp-with-auth/
 # venv : venv311jww - jwt - WebApp Running on Docker writing a file.
@@ -15,11 +16,11 @@
 
 
 # Run command with mount volume instruction :
+# This command mounts the C:\Users\haris\python\docker-write directory on the host system to the /path/in/container directory in the container.
 
-# docker run -v C:\\Users\\haris\\python\\docker-write:/code -p 5000:5000  jwt-dcwf5k
+# Windows : docker run -v C:\\Users\\haris\\python\\docker-write:/code -p 5000:5000  jwt-dcfw5k
 
-# This command mounts the C:\Users\haris\python\ddocker-write directory on the host system to the /path/in/container directory in the container.
-#
+# # Ec2/Al2: docker run -v /home/ec2-user/pydev/jwt-dc:/code -p 5000:5000  jwt-dcfw5k -d
 
 
 import logging

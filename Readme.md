@@ -1,18 +1,18 @@
-## App Name : fastapi-jwt-native
+## App Name : fastapi-jwt-dc (write file Version)
 
-### This is a demo of jwt (Jason Web toakens) using Fast API & Uvicorn
+### This is a demo of jwt (Jason Web toakens) using Fast API & Uvicorn with logging
 
-###  Venv Name : venv311-jwn
+###  Venv Name : venv311-jwt
 
-Build command for docker image : docker build -t jwt-dcn .
+Build command for docker image : docker build -t jwt-dcfw5k .
 
 Run Command to run without Docker : uvicorn --port 9000 main:app --reload
-Run Command for docker : docker run -p 8000:8000  
-Run docker in background mode : docker run -d -p 8000:8000 jwt-dcn  
+VS Code Run Command for docker : docker run -p 8000:8000  
+Run docker in background mode : docker run -d -p 8000:8000 jwt-dcfw5k  
 
 Run command from windows CMD : uvicorn main:app --port 9000 --reload
 
-Run command with mount volume instruction :
+Run command with mount volume instruction : ( Required for logging)
 
 docker run -v C:\\Users\\haris\\python\\docker-write:/code -p 5000:5000  jwt-dcwf5k
 
