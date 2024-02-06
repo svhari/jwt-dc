@@ -1,6 +1,6 @@
 ## App Name : fastapi-jwt-dc (write file Version)
 
-### This is a demo of jwt (Jason Web toakens) using Fast API & Uvicorn with logging
+### This is a demo of jwt (Jason Web tokens) using Fast API & Uvicorn with logging
 
 ###  Venv Name : venv311-jwt
 
