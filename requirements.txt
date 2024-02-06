@@ -7,4 +7,6 @@ pycryptodome
 python-jose
 jinja2
 rich
+requests
+numpy
 loguru

@@ -14,6 +14,6 @@ Run command from windows CMD : uvicorn main:app --port 9000 --reload
 
 Run command with mount volume instruction : ( Required for logging)
 
-docker run -v C:\\Users\\haris\\python\\docker-write:/code -p 5000:5000  jwt-dcwf5k
+docker run -v C:\\Users\\haris\\python\\fastapi-jwtapp-dc:/code -p 5000:5000  jwt-dcwf5k
 
 This command mounts the C:\Users\haris\python\ddocker-write directory on the host system to the /path/in/container directory in the container.

@@ -22,7 +22,7 @@
 #
 
 
-import logging
+#import logging
 import os
 import datetime as dt
 from typing import Dict, List, Optional
@@ -39,10 +39,16 @@ from pydantic import BaseModel
 from rich import inspect, print
 from rich.console import Console
 from loguru import logger
+import qnu
+
+QNU = True   # Get seed from Qnu
 
 # A sample disk file written on the host
 access_log = "jwt_access.log"
 error_log  = "jwt_error.log"
+user1_log = "./user1/jwt_user1.log"
+user2_log = "./user2/jwt_user2.log"
+#user3_log = "./user3/jwt_user3.log"
 
 
 # Get the UID/username and GID of the current user
@@ -59,9 +65,37 @@ else:
 
 console = Console()
 # Create a logger object
-logger.add(access_log, rotation="10 MB", level="INFO")
-logger.add(error_log, rotation="10 MB", level="ERROR")
+logger.add(access_log, rotation="2 MB", level="INFO")
+logger.add(error_log, rotation="2 MB", level="ERROR")
+logger.add(user1_log, rotation="2 MB", level="INFO")
+logger.add(user2_log, rotation="2 MB", level="INFO")
 
+"""
+# Configure logging for cust_1.log
+logging.basicConfig(filename=user1_log, level=logging.INFO)
+logger1 = logging.getLogger('cust_1')
+logger1.info('This is a message for cust_1.log')
+
+# Configure logging for cust_2.log
+logging.basicConfig(filename=user2_log, level=logging.INFO)
+logger2 = logging.getLogger('cust_2')
+logger2.info('This is a message for cust_2.log')
+
+# Configure logging for cust_3.log
+logging.basicConfig(filename=user3_log, level=logging.INFO)
+logger3 = logging.getLogger('cust_3')
+logger3.info('This is a message for cust_3.log')
+
+"""
+# Configure logging for cust_1.log using loguru
+logger1 = logger.bind(log_file=user1_log)
+logger1.info('This is a message for cust_1.log')
+
+# Configure logging for cust_2.log using loguru
+logger2 = logger.bind(log_file=user2_log)
+logger2.info('This is a message for cust_2.log')
+
+"""
 
 # Create a file handler
 #handler = logging.FileHandler(log_file)
@@ -70,12 +104,16 @@ logger.add(error_log, rotation="10 MB", level="ERROR")
 # Get the file permissions
 access_log_permissions = oct(os.stat(access_log).st_mode)[-3:]
 error_log_permissions = oct(os.stat(error_log).st_mode)[-3:]
+user1_log_permissions = oct(os.stat(user1_log).st_mode)[-3:]
+user2_log_permissions = oct(os.stat(user2_log).st_mode)[-3:]
 
 # print(f"File permissions: {permissions}")
 # Change the file permissions
 # 0o644 permission allows read access to all users and write access only to the owner of the file.
 os.chmod(access_log, 0o644)
 os.chmod(error_log, 0o644)
+os.chmod(user1_log, 0o644)
+os.chmod(user2_log, 0o644)
 
 # Create a formatter
 #formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -83,14 +121,13 @@ os.chmod(error_log, 0o644)
 
 # Add the handler to the logger
 #logger.addHandler(handler)
-
+"""
 # --------------------------------------------------------------------------
 # Models and Data
 # --------------------------------------------------------------------------
 class User(BaseModel):
     username: str
     hashed_password: str
-
 
 # Create a "database" to hold your data. This is just for example purposes. In
 # a real world scenario you would likely connect to a SQL or NoSQL database.
@@ -104,6 +141,21 @@ DB = DataBase(
     ]
 )
 
+def get_username_from_user(user: User) -> str:
+    """
+    Returns the username for the given User object.
+
+    Args:
+        user (User): User object containing username and hashed_password.
+
+    Returns:
+        str: Username corresponding to the User object, or "User not found" if not found.
+    """
+    if user and user.username:
+        for db_user in DB.user:
+            if db_user.username == user.username:
+                return db_user.username
+    return "User not found"
 
 def get_user(username: str) -> User:
     user = [user for user in DB.user if user.username == username]
@@ -217,6 +269,7 @@ def decode_token(token: str) -> User:
 
 
 def get_current_user_from_token(token: str = Depends(oauth2_scheme)) -> User:
+    
     """
     Get the current user from the cookies in a request.
 
@@ -237,6 +290,17 @@ def get_current_user_from_cookie(request: Request) -> User:
     token = request.cookies.get(settings.COOKIE_NAME)
     user = decode_token(token)
     return user
+
+def get_current_token_from_cookie(request: Request):
+    """
+    Get the current user from the cookies in a request.
+    
+    Use this function from inside other routes to get the current user. Good
+    for views that should work for both logged in, and not logged in users.
+    """
+    token = request.cookies.get(settings.COOKIE_NAME)
+    user = decode_token(token)
+    return token
 
 
 @app.post("token")
@@ -266,8 +330,8 @@ def login_for_access_token(
 @app.get("/", response_class=HTMLResponse)
 def index(request: Request):
     console.log("[green]About to write on log file")
-    console.print(f'{access_log} permissions: {access_log_permissions}')
-    console.print(f'{error_log} permissions: {error_log_permissions}')
+    #console.print(f'{access_log} permissions: {access_log_permissions}')
+    #console.print(f'{error_log} permissions: {error_log_permissions}')
     # Display the file ownership info based on the OS
     if os.name == 'nt':
         console.print(f'OS: {os.name} File ownership: {username}')
@@ -287,7 +351,8 @@ def index(request: Request):
         "request": request,
     }
 
-    logger.info(f'User {user} accessed Home Page.')
+   
+   
     return templates.TemplateResponse("index.html", context)
 
 
@@ -329,17 +394,43 @@ def index(request: Request, user: User = Depends(get_current_user_from_token)):
         message = ""
     """
 
-
-    message = f'User {user} logged into Private Page.'
+    user_name = get_username_from_user(user)
+    log_user = None
+    message = f'User {user_name} logged into Private Page.'
+    
     context = {
         "user": user,
         "request": request,
-        "message": message,
-        
+        "message": message, 
     }
     
+    token_used = get_current_token_from_cookie (request)
+    console.print(f'jwt token_used by {user_name} -> [{token_used}]\n')
+
+    if 'user1' in  user_name:
+        log_user = 'user1'
+        logger1.info(f'User {log_user} accessed Private Page.')
+        logger1.info(f'jwt token_used by {user_name} -> {token_used}')
+        console.print(f'User {log_user} accessed Private Page.')
+        if QNU:
+            console.print(f'User {log_user}: About to fetch QNU Seed...')
+            qnu_data = qnu.randHex()
+            console.print(f'QNU Data-> {qnu_data}')
+            logger1.info(f'QNU Data-> {qnu_data}')
+            
+    elif 'user2' in  user_name:
+        log_user ='user2'
+        logger2.info(f'User {log_user} accessed Private Page.')
+ 
+        console.print(f'User {log_user} accessed Private Page.')
+    else:
+        log_user = 'user'
+        #logger3.info(f'User {log_user} type [{type(user)}] accessed Home Page.')
+        console.print(f'User {log_user} accessed Private Page.')
+
+
     # Log an info message
-    logger.info(message)
+    #logger.info(message)
     return templates.TemplateResponse("private.html", context)
 
 # --------------------------------------------------------------------------
